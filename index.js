@@ -20,6 +20,7 @@ io.on('connection', (socket) => {
 
     socket.on('send-message', (message) => {
         console.log(message);
+        socket.broadcast.emit('receive-message', message);
     });
 
     socket.on('disconnect', () => {
