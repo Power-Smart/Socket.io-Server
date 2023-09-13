@@ -19,24 +19,49 @@ const io = new Server(server, {
 
 io.on('connection', (socket) => {
 
-    console.log(socket.id);
+    // console.log(socket.id);
 
     socket.on('send-message', (message) => {
         console.log(message);
 
-        const parsedMsg = JSON.stringify(message);
+        const parsedMsg = message;
+        // console.log(parsedMsg);
+        const sId = message.senderID+"";
+        // console.log("sid", sId);
+
+
+
 
         if(parsedMsg.hasOwnProperty("flag") && parsedMsg.flag === "I"){
-
-            const sId = parsedMsg.senderId.toString();
-
-            socketClientArr.sId = socket.id;
-        }else if((parsedMsg.hasOwnProperty("flag") && parsedMsg.flag === "F")){
+            socketClientArr = {[sId]: socket.id};
+            console.log("New client connected\n", sId,"\n", socket.id);
+        }else if((parsedMsg.hasOwnProperty("flag") && parsedMsg.flag === "M")){
             
-            const rId = parsedMsg.recieverId.toString();
+            const rId = parsedMsg.receiverID+"";
 
-            io.to(rId).emit('recieve-message', parsedMsg.message);
+            console.log("Reciever ID: ", rId);
+            console.log(socketClientArr)
 
+            if(Object.keys(socketClientArr).includes(sId)){
+                // io.to(socketClientArr[sId]).emit('recieve-message', parsedMsg.message);
+            
+                io.to(2).emit('recieve-message', parsedMsg.message);
+
+                // io.emit('recieve-message', "Hello everyone!");
+                console.log("Message sent to reciever");
+            }else{
+                const notSentAlert = {
+                    "flag": "N",
+                    "senderId": sId,
+                    "recieverId": rId,
+                    "timestamp": new Date()
+                };
+                console.log("Reciever not found. msg has not been sent");
+                if(Object.values(socketClientArr).includes(socket.id)){
+                    io.to(socketClientArr[sId]).emit('recieve-message', notSentAlert);
+                }
+
+            }
         }
 
     });
