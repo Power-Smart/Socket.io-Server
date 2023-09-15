@@ -2,13 +2,11 @@ const express = require('express');
 const app = express();
 const http = require('http');
 const cors = require('cors');
-const {Server} = require('socket.io');
+const { Server } = require('socket.io');
 
 app.use(cors());
 
 const server = http.createServer(app);
-
-let socketClientArr = {};
 
 const io = new Server(server, {
     cors: {
@@ -16,43 +14,42 @@ const io = new Server(server, {
     }
 });
 
+var users = {}; // Use an object to store user data
 
 io.on('connection', (socket) => {
+    console.log('A user connected');
 
-    console.log(socket.id);
 
-    socket.on('send-message', (message) => {
-        console.log(message);
+    // socket.on('', (userID) => {
+    //     users[userID] = socket.id;
+    // });
 
-        const parsedMsg = JSON.stringify(message);
+    socket.on('joinRoom', (roomID) => {
+        socket.join(roomID);
+        console.log('user joined room', roomID);
+    });
 
-        if(parsedMsg.hasOwnProperty("flag") && parsedMsg.flag === "I"){
-
-            const sId = parsedMsg.senderId.toString();
-
-            socketClientArr.sId = socket.id;
-        }else if((parsedMsg.hasOwnProperty("flag") && parsedMsg.flag === "F")){
-            
-            const rId = parsedMsg.recieverId.toString();
-
-            io.to(rId).emit('recieve-message', parsedMsg.message);
-
+    socket.on('sendEvent', (data) => {
+        console.log(data);
+        // users[data.senderID] = socket.id;
+        const receiverID = data.receiverID;
+        if (receiverID) {
+            io.to(receiverID).emit('receiveEvent', data);
+        } else {
+            console.log('Receiver not found:', data.receiverID);
         }
-
     });
 
     socket.on('disconnect', () => {
-        if(Object.values(socketClientArr).includes(socket.id)){
-
-            Object.keys(socketClientArr).forEach((key, value) => {
-                if (socketClientArr[value] === socket.id) {
-                    delete socketClientArr[key];
-                }
-            });
+        // Remove the user from the users object when they disconnect
+        for (const userID in users) {
+            if (users[userID] === socket.id) {
+                delete users[userID];
+                break;
+            }
         }
         console.log('user disconnected', socket.id);
     });
-
 });
 
 server.listen(3010, () => {
