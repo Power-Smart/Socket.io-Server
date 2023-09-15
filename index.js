@@ -2,13 +2,11 @@ const express = require('express');
 const app = express();
 const http = require('http');
 const cors = require('cors');
-const {Server} = require('socket.io');
+const { Server } = require('socket.io');
 
 app.use(cors());
 
 const server = http.createServer(app);
-
-let socketClientArr = {};
 
 const io = new Server(server, {
     cors: {
@@ -16,68 +14,34 @@ const io = new Server(server, {
     }
 });
 
+var users = {}; // Use an object to store user data
 
 io.on('connection', (socket) => {
 
-    // console.log(socket.id);
+    socket.on('connected', (userID) => {
+        users[userID] = socket.id;
+    });
 
-    socket.on('send-message', (message) => {
-        console.log(message);
-
-        const parsedMsg = message;
-        // console.log(parsedMsg);
-        const sId = message.senderID+"";
-        // console.log("sid", sId);
-
-
-
-
-        if(parsedMsg.hasOwnProperty("flag") && parsedMsg.flag === "I"){
-            socketClientArr = {[sId]: socket.id};
-            console.log("New client connected\n", sId,"\n", socket.id);
-        }else if((parsedMsg.hasOwnProperty("flag") && parsedMsg.flag === "M")){
-            
-            const rId = parsedMsg.receiverID+"";
-
-            console.log("Reciever ID: ", rId);
-            console.log(socketClientArr)
-
-            if(Object.keys(socketClientArr).includes(sId)){
-                // io.to(socketClientArr[sId]).emit('recieve-message', parsedMsg.message);
-            
-                io.to(2).emit('recieve-message', parsedMsg.message);
-
-                // io.emit('recieve-message', "Hello everyone!");
-                console.log("Message sent to reciever");
-            }else{
-                const notSentAlert = {
-                    "flag": "N",
-                    "senderId": sId,
-                    "recieverId": rId,
-                    "timestamp": new Date()
-                };
-                console.log("Reciever not found. msg has not been sent");
-                if(Object.values(socketClientArr).includes(socket.id)){
-                    io.to(socketClientArr[sId]).emit('recieve-message', notSentAlert);
-                }
-
-            }
+    socket.on('sendEvent', (data) => {
+        users[data.senderID] = socket.id;
+        const receiverSocketID = users[data.senderID];
+        if (receiverSocketID) {
+            io.to(receiverSocketID).emit('receiveEvent', data);
+        } else {
+            console.log('Receiver not found:', data.receiverID);
         }
-
     });
 
     socket.on('disconnect', () => {
-        if(Object.values(socketClientArr).includes(socket.id)){
-
-            Object.keys(socketClientArr).forEach((key, value) => {
-                if (socketClientArr[value] === socket.id) {
-                    delete socketClientArr[key];
-                }
-            });
+        // Remove the user from the users object when they disconnect
+        for (const userID in users) {
+            if (users[userID] === socket.id) {
+                delete users[userID];
+                break;
+            }
         }
         console.log('user disconnected', socket.id);
     });
-
 });
 
 server.listen(3010, () => {
