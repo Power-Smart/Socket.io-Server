@@ -17,16 +17,24 @@ const io = new Server(server, {
 var users = {}; // Use an object to store user data
 
 io.on('connection', (socket) => {
+    console.log('A user connected');
 
-    socket.on('connected', (userID) => {
-        users[userID] = socket.id;
+
+    // socket.on('', (userID) => {
+    //     users[userID] = socket.id;
+    // });
+
+    socket.on('joinRoom', (roomID) => {
+        socket.join(roomID);
+        console.log('user joined room', roomID);
     });
 
     socket.on('sendEvent', (data) => {
-        users[data.senderID] = socket.id;
-        const receiverSocketID = users[data.senderID];
-        if (receiverSocketID) {
-            io.to(receiverSocketID).emit('receiveEvent', data);
+        console.log(data);
+        // users[data.senderID] = socket.id;
+        const receiverID = data.receiverID;
+        if (receiverID) {
+            io.to(receiverID).emit('receiveEvent', data);
         } else {
             console.log('Receiver not found:', data.receiverID);
         }
