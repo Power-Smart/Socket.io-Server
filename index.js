@@ -14,15 +14,11 @@ const io = new Server(server, {
     }
 });
 
-var users = {}; // Use an object to store user data
+var users = {}; 
 
 io.on('connection', (socket) => {
     console.log('A user connected');
 
-
-    // socket.on('', (userID) => {
-    //     users[userID] = socket.id;
-    // });
 
     socket.on('joinRoom', (roomID) => {
         socket.join(roomID);
@@ -31,7 +27,6 @@ io.on('connection', (socket) => {
 
     socket.on('sendEvent', (data) => {
         console.log(data);
-        // users[data.senderID] = socket.id;
         const receiverID = data.receiverID;
         if (receiverID) {
             io.to(receiverID).emit('receiveEvent', data);
@@ -40,8 +35,8 @@ io.on('connection', (socket) => {
         }
     });
 
+    // Remove the user from the users object when they disconnect
     socket.on('disconnect', () => {
-        // Remove the user from the users object when they disconnect
         for (const userID in users) {
             if (users[userID] === socket.id) {
                 delete users[userID];
