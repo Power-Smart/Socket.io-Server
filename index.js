@@ -35,6 +35,7 @@ io.on('connection', (socket) => {
         }
     });
 
+    // Remove the user from the users object when they disconnect
     socket.on('disconnect', () => {
         for (const userID in users) {
             if (users[userID] === socket.id) {
