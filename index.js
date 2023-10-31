@@ -1,23 +1,49 @@
 const express = require('express');
 const app = express();
 const http = require('http');
+const dotenv = require('dotenv');
 const cors = require('cors');
 const { Server } = require('socket.io');
 
+dotenv.config();
 app.use(cors());
+app.use(express.json());
 
 const server = http.createServer(app);
 
+const FRONTEND = process.env.FRONTEND_SERVER || 'http://localhost:5173';
+const BACKEND = process.env.BACKEND_SERVER || 'http://localhost:3002';
+
+
 const io = new Server(server, {
     cors: {
-        origin: 'http://localhost:5173',
+        origin: [FRONTEND, BACKEND],
     }
 });
 
-var users = {}; 
+
+var users = {};
+
+app.post('/notify', (req, res) => {
+    try {
+        console.log(req.body);
+        const { receiverID } = req.body;
+        if (receiverID) {
+            io.to(receiverID).emit('receiveNotifications', req.body);
+        } else {
+            console.log('Receiver not found:', data.receiverID);
+        }
+        res.status(200).json({ message: 'notification sent' });
+    } catch (err) {
+        console.log(err);
+        res.status(500).json({ message: err.message });
+    }
+    console.log('notifyRoute');
+});
 
 io.on('connection', (socket) => {
     console.log('A user connected');
+    // console.log(socket);
 
 
     socket.on('joinRoom', (roomID) => {
@@ -35,6 +61,11 @@ io.on('connection', (socket) => {
         }
     });
 
+    socket.on('joinNotifications', (data) => {
+        socket.join(data.user);
+        console.log(data.user, 'joined notifications');
+    });
+
     socket.on('disconnect', () => {
         for (const userID in users) {
             if (users[userID] === socket.id) {
@@ -49,3 +80,5 @@ io.on('connection', (socket) => {
 server.listen(3010, () => {
     console.log('listening on :3010');
 });
+
+module.exports = io;
