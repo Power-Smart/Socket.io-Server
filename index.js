@@ -66,7 +66,6 @@ io.on('connection', (socket) => {
         console.log(data.user, 'joined notifications');
     });
 
-    // Remove the user from the users object when they disconnect
     socket.on('disconnect', () => {
         for (const userID in users) {
             if (users[userID] === socket.id) {
